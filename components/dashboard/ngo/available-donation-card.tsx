@@ -26,7 +26,7 @@ export function AvailableDonationCard({ donation, ngoId, disabled }: AvailableDo
   const handleClaim = async () => {
     setIsLoading(true)
     try {
-      // 1. Get available delivery partner (optional now)
+      // 1. Get available delivery partner (optional)
       const { data: availablePartners, error: partnerError } = await supabase
         .from("delivery_partners")
         .select("profile_id, profiles!inner(*)")
@@ -41,7 +41,7 @@ export function AvailableDonationCard({ donation, ngoId, disabled }: AvailableDo
         .eq("id", ngoId)
         .single()
 
-      const partnerId = availablePartners?.profile_id
+      const partnerId = availablePartners?.profile_id || null
       const assignedAt = partnerId ? new Date().toISOString() : null
       const status = partnerId ? "assigned" : "claimed"
 
@@ -53,7 +53,7 @@ export function AvailableDonationCard({ donation, ngoId, disabled }: AvailableDo
           status: status,
           claimed_by: ngoId,
           claimed_at: new Date().toISOString(),
-          assigned_to: partnerId || null,
+          assigned_to: partnerId,
           assigned_at: assignedAt,
         })
         .eq("id", donation.id)
@@ -61,39 +61,37 @@ export function AvailableDonationCard({ donation, ngoId, disabled }: AvailableDo
 
       if (donationError) throw donationError
 
-      // 4. Create delivery record ONLY if we have a partner
-      if (partnerId) {
-        const { error: deliveryError } = await supabase.from("deliveries").insert({
-          donation_id: donation.id,
-          delivery_partner_id: partnerId,
-          pickup_address: donation.pickup_address,
-          pickup_latitude: donation.pickup_latitude,
-          pickup_longitude: donation.pickup_longitude,
-          delivery_address: ngoProfile?.address || "Address not set",
-          delivery_latitude: ngoProfile?.latitude,
-          delivery_longitude: ngoProfile?.longitude,
-          status: "assigned",
-          estimated_pickup_time: new Date(Date.now() + 30 * 60000).toISOString(), // 30 mins from now
-          estimated_delivery_time: new Date(Date.now() + 60 * 60000).toISOString(), // 1 hour from now
-        })
+      // 4. Create delivery record (Now ALWAYS create one, even if pending)
+      const deliveryStatus = partnerId ? "assigned" : "pending"
 
-        if (deliveryError) {
-          console.error("Failed to create delivery record:", deliveryError)
-          // Note: We don't rollback the donation claim here, but in a real app we might want to.
-          // For now, we just warn.
-          toast({
-            title: "Claimed but delivery assignment failed",
-            description: "Please contact support or try assigning manually.",
-            variant: "destructive",
-          })
-        }
+      const { error: deliveryError } = await supabase.from("deliveries").insert({
+        donation_id: donation.id,
+        delivery_partner_id: partnerId, // Can be null now
+        pickup_address: donation.pickup_address,
+        pickup_latitude: donation.pickup_latitude,
+        pickup_longitude: donation.pickup_longitude,
+        delivery_address: ngoProfile?.address || "Address not set",
+        delivery_latitude: ngoProfile?.latitude,
+        delivery_longitude: ngoProfile?.longitude,
+        status: deliveryStatus,
+        estimated_pickup_time: new Date(Date.now() + 30 * 60000).toISOString(),
+        estimated_delivery_time: new Date(Date.now() + 60 * 60000).toISOString(),
+      })
+
+      if (deliveryError) {
+        console.error("Failed to create delivery record:", deliveryError)
+        toast({
+          title: "Claimed but delivery creation failed",
+          description: "Please contact support.",
+          variant: "destructive",
+        })
       }
 
       toast({
-        title: partnerId ? "Donation claimed & assigned" : "Donation claimed successfully",
+        title: partnerId ? "Donation claimed & assigned" : "Donation claimed & Job Created",
         description: partnerId
           ? "A delivery partner has been assigned."
-          : "No delivery partner available immediately. It is now claimed by you.",
+          : "No partner available yet. A job has been created for partners to accept.",
       })
 
       router.refresh()

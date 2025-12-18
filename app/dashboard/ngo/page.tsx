@@ -50,18 +50,18 @@ export default async function NGODashboardPage() {
   // Get stats
   const { count: totalClaimed } = await supabase
     .from("food_donations")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("claimed_by", user.id)
 
   const { count: activeClaimed } = await supabase
     .from("food_donations")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("claimed_by", user.id)
     .in("status", ["claimed", "assigned", "picked_up"])
 
   const { count: received } = await supabase
     .from("food_donations")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("claimed_by", user.id)
     .eq("status", "delivered")
 

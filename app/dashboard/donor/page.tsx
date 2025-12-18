@@ -38,18 +38,18 @@ export default async function DonorDashboardPage() {
   // Get stats
   const { count: totalDonations } = await supabase
     .from("food_donations")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("donor_id", user.id)
 
   const { count: activeDonations } = await supabase
     .from("food_donations")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("donor_id", user.id)
     .in("status", ["available", "claimed", "assigned", "picked_up"])
 
   const { count: completedDonations } = await supabase
     .from("food_donations")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("donor_id", user.id)
     .eq("status", "delivered")
 

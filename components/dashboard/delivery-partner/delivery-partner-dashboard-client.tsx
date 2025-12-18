@@ -7,11 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { TruckIcon, CheckCircleIcon, ClockIcon, StarIcon } from "lucide-react"
+import { TruckIcon, CheckCircleIcon, ClockIcon, StarIcon, PackageIcon } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard/shared/dashboard-header"
 import { SetupDeliveryPartnerDialog } from "@/components/dashboard/delivery-partner/setup-delivery-partner-dialog"
 import { ActiveDeliveryCard } from "@/components/dashboard/delivery-partner/active-delivery-card"
 import { CompletedDeliveryCard } from "@/components/dashboard/delivery-partner/completed-delivery-card"
+import { AvailableJobCard } from "@/components/dashboard/delivery-partner/available-job-card"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
@@ -20,6 +21,7 @@ interface DeliveryPartnerDashboardClientProps {
   partnerDetails: DeliveryPartner | null
   activeDeliveries: any[]
   completedDeliveries: any[]
+  pendingDeliveries: any[]
   stats: {
     total: number
     active: number
@@ -32,6 +34,7 @@ export function DeliveryPartnerDashboardClient({
   partnerDetails,
   activeDeliveries,
   completedDeliveries,
+  pendingDeliveries,
   stats,
 }: DeliveryPartnerDashboardClientProps) {
   const [showSetupDialog, setShowSetupDialog] = useState(!partnerDetails)
@@ -142,6 +145,7 @@ export function DeliveryPartnerDashboardClient({
           <Tabs defaultValue="active">
             <TabsList>
               <TabsTrigger value="active">Active Deliveries</TabsTrigger>
+              <TabsTrigger value="available">Available Jobs</TabsTrigger>
               <TabsTrigger value="completed">Completed</TabsTrigger>
             </TabsList>
 
@@ -166,6 +170,30 @@ export function DeliveryPartnerDashboardClient({
                     <div className="space-y-4">
                       {activeDeliveries.map((delivery) => (
                         <ActiveDeliveryCard key={delivery.id} delivery={delivery} />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="available" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Available Jobs</CardTitle>
+                  <CardDescription>Browse and accept new delivery requests</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {pendingDeliveries.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <PackageIcon className="mb-4 h-12 w-12 text-muted-foreground" />
+                      <h3 className="mb-2 text-lg font-semibold">No available jobs</h3>
+                      <p className="text-sm text-muted-foreground">New jobs will appear here when NGOs claim donations</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {pendingDeliveries.map((delivery) => (
+                        <AvailableJobCard key={delivery.id} delivery={delivery} partnerId={profile.id} />
                       ))}
                     </div>
                   )}

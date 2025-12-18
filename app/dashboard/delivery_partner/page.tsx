@@ -56,17 +56,28 @@ export default async function DeliveryPartnerDashboardPage() {
     .eq("delivery_partner_id", user.id)
     .eq("status", "delivered")
     .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(10)
+
+  // Get available jobs (pending deliveries)
+  const { data: pendingDeliveries } = await supabase
+    .from("deliveries")
+    .select(`
+      *,
+      donation:food_donations(*)
+    `)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true })
 
   // Get stats
   const { count: totalDeliveries } = await supabase
     .from("deliveries")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("delivery_partner_id", user.id)
 
   const { count: activeCount } = await supabase
     .from("deliveries")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("delivery_partner_id", user.id)
     .in("status", [
       "assigned",
@@ -80,7 +91,7 @@ export default async function DeliveryPartnerDashboardPage() {
 
   const { count: completedCount } = await supabase
     .from("deliveries")
-    .select("*", { count: "only", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("delivery_partner_id", user.id)
     .eq("status", "delivered")
 
@@ -90,6 +101,7 @@ export default async function DeliveryPartnerDashboardPage() {
       partnerDetails={partnerDetails}
       activeDeliveries={activeDeliveries || []}
       completedDeliveries={completedDeliveries || []}
+      pendingDeliveries={pendingDeliveries || []}
       stats={{
         total: totalDeliveries || 0,
         active: activeCount || 0,
